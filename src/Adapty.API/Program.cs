@@ -4,18 +4,24 @@ using Microsoft.IdentityModel.Tokens; // Necessário para assinar o token
 using Microsoft.OpenApi.Models; // Necessário para o Swagger com Auth
 using System.Text;
 using Adapty.API.Data; // Seu DbContext
+using Adapty.API.Services;
+using Microsoft.IdentityModel.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+IdentityModelEventSource.ShowPII = true;
 
 // 1. Configuração do Banco de Dados (MySQL)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
-builder.Services.AddScoped<Adapty.API.Services.SpacedRepetitionService>();
-builder.Services.AddScoped<Adapty.API.Services.AuthService>();
-builder.Services.AddScoped<Adapty.API.Services.DeckService>();
-builder.Services.AddScoped<Adapty.API.Services.CardService>();
 
+// 2. Injeção de Dependência dos Serviços
+builder.Services.AddScoped<SpacedRepetitionService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<DeckService>();
+builder.Services.AddScoped<CardService>();
+
+// 3. Configurar CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
@@ -27,11 +33,13 @@ builder.Services.AddCors(options =>
         });
 });
 
-// --- MUDANÇA 1: Configurar Autenticação JWT ---
+// 4. Configuração do JWT
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrEmpty(jwtKey))
-    throw new InvalidOperationException("JWT Key is not configured. Please set 'Jwt:Key' in appsettings.");
-var key = Encoding.UTF8.GetBytes(jwtKey); // Pega a chave do appsettings
+    throw new InvalidOperationException("A chave JWT não foi configurada no appsettings.json.");
+
+var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
+
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,16 +53,32 @@ builder.Services.AddAuthentication(x =>
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false, // Simplificado para o projeto acadêmico
-        ValidateAudience = false
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ClockSkew = TimeSpan.Zero
+    };
+
+    x.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine("Token inválido: " + context.Exception.Message);
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Console.WriteLine("Token válido para: " + context.Principal.Identity.Name);
+            return Task.CompletedTask;
+        }
     };
 });
 
-// 2. Adicionar Controllers
+
 builder.Services.AddControllers();
 
-// --- MUDANÇA 2: Configurar Swagger com cadeado de Auth ---
+
 builder.Services.AddEndpointsApiExplorer();
+// 5. Adicionar Controllers no Swagger com suporte a JWT
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -85,7 +109,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// 4. Configurar Pipeline de Requisição
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -93,19 +116,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
 
-// --- MUDANÇA 3: Ordem correta dos Middlewares ---
-app.UseAuthentication(); // <-- OBRIGATÓRIO vir antes do Authorization
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// --- MUDANÇA 3: Ordem correta dos Middlewares ---
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    dbContext.Database.Migrate(); // Aplica migrações pendentes
 }
 
 app.Run();

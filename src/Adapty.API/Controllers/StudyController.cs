@@ -11,7 +11,6 @@ namespace Adapty.API.Controllers
 {
     [ApiController]
     [Route("api/study")]
-    [Authorize]
     public class StudyController : ControllerBase
     {
         private readonly AppDbContext _context;

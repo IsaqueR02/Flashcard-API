@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Adapty.API.DTOs;
-using Adapty.API.Data;
 using Adapty.API.Models;
 using Adapty.API.Services;
 
@@ -9,7 +8,6 @@ namespace Adapty.API.Controllers
 {
     [ApiController]
     [Route("api/decks")]
-    [Authorize] // Isso exige o Token
     public class DecksController : ControllerBase
     {
         private readonly DeckService _deckService;
@@ -21,19 +19,15 @@ namespace Adapty.API.Controllers
             _cardService = cardService;
         }
 
-        // GET: api/decks
+        // 1. LISTAR TODOS OS DECKS
         [HttpGet]
         public IActionResult GetAllDecks()
         {
-            // Opcional: Filtrar pelo usuário logado (se você tiver UserId no Deck)
-            // Por enquanto, pega todos os decks do banco
             var decks = _deckService.GetAllDecks();
-            
             return Ok(decks);
         }
 
-        
-        // POST: api/decks
+        // 2. CRIAR UM NOVO DECK
         [HttpPost]
         public IActionResult CreateDeck([FromBody] CreateDeckDto request)
         {
@@ -41,30 +35,37 @@ namespace Adapty.API.Controllers
             {
                 Nome = request.Title,
                 Descricao = request.Description
-                // Se tiver UserId, adicione aqui: UserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value)
             };
-
             _deckService.CreateDeck(deck);
-
-            return Ok(new { message = "Deck criado com sucesso!", deckId = deck.Id });
+            return Ok(new { message = "Deck criado!", deckId = deck.Id });
         }
 
-        // POST: api/decks/{deckId}/cards
+        // 3. BUSCAR CARTAS DE UM DECK ESPECÍFICO (GET)
         [HttpGet("{deckId}/cards")]
-        public IActionResult GetCardsByDeck(int deckId, [FromBody] CreateCardDto request)
+        public IActionResult GetCardsByDeck(int deckId)
         {
-            var cards = _deckService.GetDeckById(deckId);
-            if (cards == null) return NotFound("Deck não encontrado.");
+            var cards = _cardService.GetCardsByDeck(deckId);
+            return Ok(cards);
+        }
+
+        // 4. ADICIONAR CARTA EM UM DECK (POST)
+        [HttpPost("{deckId}/cards")]
+        public IActionResult AddCardToDeck(int deckId, [FromBody] CreateCardDto request)
+        {
+            var deck = _deckService.GetDeckById(deckId);
+            if (deck == null) return NotFound("Deck não encontrado.");
+
             var card = new Card
             {
-                DeckId = deckId,
                 Pergunta = request.FrontText,
-                Resposta = request.BackText
+                Resposta = request.BackText,
+                RepetitionCount = 0,
+                IntervalInDays = 0,
+                EaseFactor = 2.5
             };
 
             _cardService.AddCardToDeck(deckId, card);
-
-            return Ok(new { message = "Cartão adicionado com sucesso!", cardId = card.Id });
+            return Ok(new { message = "Cartão criado!", cardId = card.Id });
         }
     }
 }

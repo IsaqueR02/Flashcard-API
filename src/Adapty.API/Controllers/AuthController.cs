@@ -39,6 +39,13 @@ namespace Adapty.API.Controllers
             _context.Users.Add(user);
             _context.SaveChanges();
 
+            if (user == null || user.PasswordHash != request.Password)
+            {
+                return Unauthorized("E-mail ou senha inválidos.");
+            }
+            Console.WriteLine($"Senha enviada: '{request.Password}'");
+            Console.WriteLine($"Senha salva:   '{user.PasswordHash}'");
+
             return Ok(new { message = "Usuário registrado com sucesso!" });
         }
 
