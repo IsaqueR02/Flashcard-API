@@ -32,4 +32,13 @@ namespace Adapty.API.DTOs
     public record ErrorResponseDto(string Message);
 
     public record AuthResponseDto(string Token, UserProfileDto User);
+
+    public record CardSimpleDto(int Id, string Front, string Back);
+
+    public record DeckWithCardsDto(
+        int Id, 
+        string Name, 
+        string Description, 
+        List<CardSimpleDto> Cards
+    );
 }
