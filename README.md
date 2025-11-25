@@ -69,7 +69,7 @@ Siga os passos abaixo para configurar e executar a API localmente usando Docker 
     A API estará rodando em `http://localhost:8080`.
 
 ## 📁 Estrutura do Projeto
-adapty-backend/
+Flashcard-API/
 
 ├── src/
 
