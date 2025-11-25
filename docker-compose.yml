@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  adapty-db:
+    image: mysql:latest
+    container_name: adapty_mysql_local
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: adapty_db
+      MYSQL_USER: adapty_user
+      MYSQL_PASSWORD: adapty_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
