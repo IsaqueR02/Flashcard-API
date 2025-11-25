@@ -13,6 +13,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 builder.Services.AddScoped<Adapty.API.Services.SpacedRepetitionService>();
 builder.Services.AddScoped<Adapty.API.Services.AuthService>();
+builder.Services.AddScoped<Adapty.API.Services.DeckService>();
+builder.Services.AddScoped<Adapty.API.Services.CardService>();
 
 builder.Services.AddCors(options =>
 {
@@ -29,7 +31,7 @@ builder.Services.AddCors(options =>
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrEmpty(jwtKey))
     throw new InvalidOperationException("JWT Key is not configured. Please set 'Jwt:Key' in appsettings.");
-var key = Encoding.ASCII.GetBytes(jwtKey); // Pega a chave do appsettings
+var key = Encoding.UTF8.GetBytes(jwtKey); // Pega a chave do appsettings
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
