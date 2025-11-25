@@ -3,7 +3,7 @@ version: '3.8'
 services:
   adapty-db:
     image: mysql:latest
-    container_name: adapty_mysql_local
+    container_name: adapty_mysql_container
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: adapty_db
