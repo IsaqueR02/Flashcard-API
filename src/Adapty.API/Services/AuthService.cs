@@ -20,7 +20,7 @@ namespace Adapty.API.Services
         public string GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_configuration["Jwt:Key"]);
+            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -39,7 +39,5 @@ namespace Adapty.API.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
-
-        // Você pode colocar a validação de senha aqui também se quiser expandir no futuro
     }
 }
